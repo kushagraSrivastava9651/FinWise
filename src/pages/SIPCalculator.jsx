@@ -24,9 +24,9 @@ function buildChartData(monthly, annualReturn, years) {
     const fv = monthly * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
     data.push({
       year: `Y${y}`,
-      invested: monthly * n,
-      value: Math.round(fv),
-      returns: Math.round(fv - monthly * n),
+      invested: Number((monthly * n).toFixed(2)),
+      value: Number(fv.toFixed(2)),
+      returns: Number((fv - monthly * n).toFixed(2)),
     });
   }
   return data;
@@ -170,11 +170,7 @@ export default function SIPCalculator() {
             max={100000}
             step={500}
             onChange={setMonthly}
-            format={(v) => {
-              if (v >= 100000) return `₹1 L`;
-              if (v >= 1000) return `₹${(v / 1000).toFixed(1)}k`;
-              return `₹${v}`;
-            }}
+            format={(v) => formatINR(v)}
           />
           <SliderInput
             label="Expected Return"

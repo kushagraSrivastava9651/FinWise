@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Sparkles, Info, ChevronDown, ChevronUp, Receipt } from "lucide-react";
 
 // ─── Tax Slabs FY 2025-26 ─────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ function calcSlabTax(taxableIncome, slabs) {
     const taxable = Math.min(taxableIncome, slab.upto) - slab.from;
     tax += (taxable * slab.rate) / 100;
   }
-  return Math.round(tax);
+  return Number(tax.toFixed(2));
 }
 
 /**
@@ -70,10 +70,10 @@ function calcRebate(baseTax, taxableIncome, regime) {
  */
 function calcSurcharge(taxAfterRebate, grossIncome, regime) {
   if (grossIncome <= 5000000)  return 0;
-  if (grossIncome <= 10000000) return Math.round(taxAfterRebate * 0.10);
-  if (grossIncome <= 20000000) return Math.round(taxAfterRebate * 0.15);
-  if (grossIncome <= 50000000) return Math.round(taxAfterRebate * 0.25);
-  return Math.round(taxAfterRebate * (regime === "old" ? 0.37 : 0.25));
+  if (grossIncome <= 10000000) return Number((taxAfterRebate * 0.10).toFixed(2));
+  if (grossIncome <= 20000000) return Number((taxAfterRebate * 0.15).toFixed(2));
+  if (grossIncome <= 50000000) return Number((taxAfterRebate * 0.25).toFixed(2));
+  return Number((taxAfterRebate * (regime === "old" ? 0.37 : 0.25)).toFixed(2));
 }
 
 /** Full tax computation for one regime */
@@ -82,8 +82,8 @@ function computeTax(taxableIncome, grossIncome, slabs, regime) {
   const rebate         = calcRebate(baseTax, taxableIncome, regime);
   const taxAfterRebate = Math.max(0, baseTax - rebate);
   const surcharge      = calcSurcharge(taxAfterRebate, grossIncome, regime);
-  const cess           = Math.round((taxAfterRebate + surcharge) * 0.04);
-  const total          = taxAfterRebate + surcharge + cess;
+  const cess           = Number(((taxAfterRebate + surcharge) * 0.04).toFixed(2));
+  const total          = Number((taxAfterRebate + surcharge + cess).toFixed(2));
   return { baseTax, rebate, taxAfterRebate, surcharge, cess, total };
 }
 
@@ -91,11 +91,8 @@ function computeTax(taxableIncome, grossIncome, slabs, regime) {
 
 function formatINR(v) {
   if (v === undefined || v === null || isNaN(v)) return "—";
-  const n = Math.round(v);
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)} Cr`;
-  if (n >= 100000)   return `₹${(n / 100000).toFixed(2)} L`;
-  if (n >= 1000)     return `₹${(n / 1000).toFixed(1)}k`;
-  return `₹${n.toLocaleString("en-IN")}`;
+  const n = Number(v);
+  return `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 function pct(part, whole) {
@@ -106,8 +103,48 @@ function pct(part, whole) {
 // ─── SliderInput ──────────────────────────────────────────────────────────────
 
 function SliderInput({ label, value, min, max, step, onChange, format, unit, sublabel }) {
-  const display  = format ? format(value) : `${value.toLocaleString("en-IN")}${unit ? ` ${unit}` : ""}`;
-  const pctFill  = ((value - min) / (max - min)) * 100;
+  const [editing, setEditing] = useState(false);
+  const [raw, setRaw] = useState(String(value));
+
+  useEffect(() => {
+    if (!editing) setRaw(String(value));
+  }, [value, editing]);
+
+  const display = format ? format(value) : `${value.toLocaleString("en-IN")}${unit ? ` ${unit}` : ""}`;
+  const pctFill = ((value - min) / (max - min)) * 100;
+
+  const commit = (str) => {
+    setEditing(false);
+    const num = parseFloat(str.replace(/[^0-9.]/g, ""));
+    if (!isNaN(num)) {
+      const clamped = Math.min(max, Math.max(min, num));
+      onChange(clamped);
+      setRaw(String(clamped));
+    } else {
+      setRaw(String(value));
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") e.target.blur();
+    if (e.key === "Escape") {
+      setEditing(false);
+      setRaw(String(value));
+      e.target.blur();
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const next = Math.min(max, value + step);
+      onChange(next);
+      setRaw(String(next));
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const prev = Math.max(min, value - step);
+      onChange(prev);
+      setRaw(String(prev));
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -116,9 +153,25 @@ function SliderInput({ label, value, min, max, step, onChange, format, unit, sub
           <span className="text-sm text-slate-soft">{label}</span>
           {sublabel && <p className="text-xs text-slate-dim mt-0.5">{sublabel}</p>}
         </div>
-        <span className="font-mono text-sm font-semibold text-white bg-white/5 px-3 py-1 rounded-lg shrink-0">
-          {display}
-        </span>
+        {editing ? (
+          <input
+            autoFocus
+            type="text"
+            inputMode="decimal"
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            onBlur={(e) => commit(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="font-mono text-sm font-semibold text-white bg-white/5 px-3 py-1 rounded-lg shrink-0 w-28 text-right outline-none"
+          />
+        ) : (
+          <span
+            onClick={() => setEditing(true)}
+            className="font-mono text-sm font-semibold text-white bg-white/5 px-3 py-1 rounded-lg shrink-0 cursor-text"
+          >
+            {display}
+          </span>
+        )}
       </div>
       <input
         type="range"
@@ -270,11 +323,7 @@ export default function TaxPage() {
               max={10000000}
               step={50000}
               onChange={setGrossIncome}
-              format={(v) => {
-                if (v >= 10000000) return `₹1 Cr`;
-                if (v >= 100000)   return `₹${(v / 100000).toFixed(1)} L`;
-                return `₹${v.toLocaleString("en-IN")}`;
-              }}
+              format={(v) => formatINR(v)}
             />
           </div>
 
@@ -303,7 +352,7 @@ export default function TaxPage() {
               max={150000}
               step={5000}
               onChange={setSection80c}
-              format={(v) => v === 0 ? "₹0" : `₹${(v / 1000).toFixed(0)}k`}
+              format={(v) => formatINR(v)}
             />
             <SliderInput
               label="Section 80D"
@@ -313,7 +362,7 @@ export default function TaxPage() {
               max={100000}
               step={5000}
               onChange={setSection80d}
-              format={(v) => v === 0 ? "₹0" : `₹${(v / 1000).toFixed(0)}k`}
+              format={(v) => formatINR(v)}
             />
             <SliderInput
               label="NPS — 80CCD(1B)"
@@ -323,7 +372,7 @@ export default function TaxPage() {
               max={50000}
               step={5000}
               onChange={setNps80ccd}
-              format={(v) => v === 0 ? "₹0" : `₹${(v / 1000).toFixed(0)}k`}
+              format={(v) => formatINR(v)}
             />
             <SliderInput
               label="Other Deductions"
@@ -333,11 +382,7 @@ export default function TaxPage() {
               max={500000}
               step={10000}
               onChange={setOtherDeductions}
-              format={(v) => {
-                if (v === 0)       return "₹0";
-                if (v >= 100000)   return `₹${(v / 100000).toFixed(1)} L`;
-                return `₹${(v / 1000).toFixed(0)}k`;
-              }}
+              format={(v) => formatINR(v)}
             />
 
             {/* Deduction summary bar */}
@@ -424,13 +469,13 @@ export default function TaxPage() {
               <div>
                 <p className="text-xs text-slate-dim mb-0.5">Old Regime</p>
                 <p className="font-mono text-sm font-semibold text-white">
-                  {formatINR(Math.round((grossIncome - result.old.total) / 12))}
+                  {formatINR(Number(((grossIncome - result.old.total) / 12).toFixed(2)))}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-slate-dim mb-0.5">New Regime</p>
                 <p className="font-mono text-sm font-semibold text-emerald-400">
-                  {formatINR(Math.round((grossIncome - result.new.total) / 12))}
+                  {formatINR(Number(((grossIncome - result.new.total) / 12).toFixed(2)))}
                 </p>
               </div>
             </div>

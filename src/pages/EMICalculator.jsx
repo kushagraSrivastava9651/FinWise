@@ -153,11 +153,7 @@ export default function EMICalculator() {
             max={10000000}
             step={50000}
             onChange={setLoanAmount}
-            format={(v) => {
-              if (v >= 10000000) return `₹${v / 10000000} Cr`;
-              if (v >= 100000) return `₹${(v / 100000).toFixed(1)} L`;
-              return `₹${v.toLocaleString("en-IN")}`;
-            }}
+            format={(v) => formatINR(v)}
           />
           <SliderInput
             label="Interest Rate"

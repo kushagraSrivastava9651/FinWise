@@ -3,14 +3,14 @@ export function calculateEMI(principal, annualRate, tenureMonths) {
   if (!principal || !annualRate || !tenureMonths) return null;
   const r = annualRate / 12 / 100;
   const n = tenureMonths;
-  if (r === 0) return { emi: principal / n, totalAmount: principal, totalInterest: 0 };
+  if (r === 0) return { emi: Number((principal / n).toFixed(2)), totalAmount: principal, totalInterest: 0 };
   const emi = (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
   const totalAmount = emi * n;
   const totalInterest = totalAmount - principal;
   return {
-    emi: Math.round(emi),
-    totalAmount: Math.round(totalAmount),
-    totalInterest: Math.round(totalInterest),
+    emi: Number(emi.toFixed(2)),
+    totalAmount: Number(totalAmount.toFixed(2)),
+    totalInterest: Number(totalInterest.toFixed(2)),
   };
 }
 
@@ -24,10 +24,10 @@ export function generateAmortisation(principal, annualRate, tenureMonths) {
   let balance = principal;
   const schedule = [];
   for (let i = 1; i <= n; i++) {
-    const interest = Math.round(balance * r);
-    const principalPaid = Math.round(emi - interest);
-    balance = Math.max(0, Math.round(balance - principalPaid));
-    schedule.push({ month: i, emi: Math.round(emi), principal: principalPaid, interest, balance });
+    const interest = Number((balance * r).toFixed(2));
+    const principalPaid = Number((emi - interest).toFixed(2));
+    balance = Number(Math.max(0, balance - principalPaid).toFixed(2));
+    schedule.push({ month: i, emi: Number(emi.toFixed(2)), principal: principalPaid, interest, balance });
   }
   return schedule;
 }
@@ -38,9 +38,9 @@ export function calculateSIP(monthly, annualReturn, years) {
   const n = years * 12;
   const fv = monthly * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
   return {
-    futureValue: Math.round(fv),
-    invested: monthly * n,
-    returns: Math.round(fv - monthly * n),
+    futureValue: Number(fv.toFixed(2)),
+    invested: Number((monthly * n).toFixed(2)),
+    returns: Number((fv - monthly * n).toFixed(2)),
   };
 }
 
@@ -48,8 +48,8 @@ export function calculateSIP(monthly, annualReturn, years) {
 export function calculateFD(amount, annualRate, years) {
   const maturity = amount * Math.pow(1 + annualRate / 100, years);
   return {
-    maturity: Math.round(maturity),
-    interest: Math.round(maturity - amount),
+    maturity: Number(maturity.toFixed(2)),
+    interest: Number((maturity - amount).toFixed(2)),
   };
 }
 
@@ -58,7 +58,8 @@ export function formatINR(amount) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 

@@ -10,8 +10,8 @@ function calcFD(principal, annualRate, years, compoundFreq) {
   const r = annualRate / 100;
   const maturity = principal * Math.pow(1 + r / n, n * years);
   return {
-    maturity: Math.round(maturity),
-    interest: Math.round(maturity - principal),
+    maturity: Number(maturity.toFixed(2)),
+    interest: Number((maturity - principal).toFixed(2)),
   };
 }
 
@@ -26,8 +26,8 @@ function calcFDMonthly(principal, annualRate, years, compoundFreq) {
     data.push({
       month: m,
       year: Math.ceil(m / 12),
-      value: Math.round(val),
-      interest: Math.round(val - principal),
+      value: Number(val.toFixed(2)),
+      interest: Number((val - principal).toFixed(2)),
     });
   }
   return data;

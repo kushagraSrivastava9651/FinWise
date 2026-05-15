@@ -23,10 +23,8 @@ export default function SliderInput({ label, value, min, max, step, onChange, fo
     const num = parseFloat(str.replace(/[^0-9.]/g, ""));
     if (!isNaN(num)) {
       const clamped = Math.min(max, Math.max(min, num));
-      // Snap to nearest step
-      const snapped = Math.round(clamped / step) * step;
-      onChange(snapped);
-      setRaw(String(snapped));
+      onChange(clamped);
+      setRaw(String(clamped));
     } else {
       setRaw(String(value)); // revert on bad input
     }
