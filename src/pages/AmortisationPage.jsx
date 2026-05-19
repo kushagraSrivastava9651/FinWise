@@ -1,6 +1,7 @@
 // pages/AmortisationPage.jsx
 import { useState, useRef, useEffect } from "react";
 import SliderInput from "../components/SliderInput";
+import Seo from "../components/Seo";
 import { generateAmortisation, formatINR, formatNumber } from "../utils/calculations";
 
 const PAGE_SIZE = 24;
@@ -107,6 +108,11 @@ export default function AmortisationPage() {
 
   return (
     <div className="pt-24 pb-16 px-4 max-w-4xl mx-auto">
+      <Seo
+        title="Loan Amortisation Schedule | FinWise"
+        description="Generate loan amortisation schedules and visualise principal versus interest across each payment. Understand your repayment plan clearly."
+        keywords="amortisation schedule, loan repayment, EMI schedule, interest breakdown"
+      />
       <h1 className="font-display text-2xl font-800 text-white mb-1">
         Amortisation <span className="text-gold">Schedule</span>
       </h1>

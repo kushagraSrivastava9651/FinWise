@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { ArrowLeftRight, TrendingDown, Wallet, Clock } from "lucide-react";
 import SliderInput from "../components/SliderInput";
+import Seo from "../components/Seo";
 import { calculateEMI, formatINR, formatNumber } from "../utils/calculations";
 
 const LOAN_DEFAULTS = [
@@ -154,6 +155,11 @@ export default function ComparePage() {
 
   return (
     <div className="pt-24 pb-16 px-4 max-w-5xl mx-auto">
+      <Seo
+        title="Loan Comparison Calculator | FinWise"
+        description="Compare two loan offers side-by-side for EMI, interest, and total outflow. Find the cheaper borrowing option quickly."
+        keywords="loan comparison, EMI comparison, best loan calculator, loan interest analysis"
+      />
       {/* Header */}
       <div className="mb-8">
         <p className="text-gold text-xs font-mono uppercase tracking-widest mb-2">Calculator · Compare</p>

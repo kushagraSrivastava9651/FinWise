@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Sparkles, Info, ChevronDown, ChevronUp, Receipt } from "lucide-react";
+import Seo from "../components/Seo";
 
 // ─── Tax Slabs FY 2025-26 ─────────────────────────────────────────────────────
 // Old regime: unchanged, basic exemption ₹2.5L
@@ -291,6 +292,11 @@ export default function TaxPage() {
 
   return (
     <div className="min-h-screen bg-ink pt-20 pb-16">
+      <Seo
+        title="Income Tax Calculator | FinWise"
+        description="Compare old and new Indian tax regimes for FY 2025-26. Estimate tax, rebate, cess and take-home income quickly."
+        keywords="tax calculator, income tax calculator, old regime, new regime, FY 2025-26"
+      />
 
       {/* Header */}
       <div className="max-w-6xl mx-auto px-4 pt-8 pb-6 animate-slide-up-1">

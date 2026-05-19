@@ -1,36 +1,73 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import {
   Download, Share2, Sparkles, ChevronDown, ChevronUp, Check,
 } from "lucide-react";
+import Seo from "../components/Seo";
 import SliderInput from "../components/SliderInput";
 import { calculateSIP, formatINR } from "../utils/calculations";
 import { downloadSIPPdf } from "../utils/pdfExport";
 
-const PRESETS = [
+// ─── Presets ────────────────────────────────────────────────────────────────
+
+const SIP_PRESETS = [
   { label: "Starter",    monthly: 1000,  rate: 12, years: 10 },
   { label: "Regular",    monthly: 5000,  rate: 12, years: 15 },
   { label: "Aggressive", monthly: 10000, rate: 15, years: 20 },
   { label: "Retirement", monthly: 20000, rate: 12, years: 30 },
 ];
 
-function buildChartData(monthly, annualReturn, years) {
+const LUMPSUM_PRESETS = [
+  { label: "Conservative", amount: 100000,  rate: 8,  years: 5  },
+  { label: "Moderate",     amount: 500000,  rate: 12, years: 10 },
+  { label: "Growth",       amount: 1000000, rate: 15, years: 15 },
+  { label: "Wealth",       amount: 5000000, rate: 12, years: 20 },
+];
+
+// ─── Calculations ────────────────────────────────────────────────────────────
+
+function calcLumpsum(amount, annualRate, years) {
+  const r = annualRate / 100;
+  const futureValue = amount * Math.pow(1 + r, years);
+  return {
+    futureValue: Math.round(futureValue),
+    returns: Math.round(futureValue - amount),
+    cagr: annualRate,
+  };
+}
+
+function buildSIPChartData(monthly, annualReturn, years) {
   const r = annualReturn / 12 / 100;
-  const data = [];
-  for (let y = 1; y <= years; y++) {
+  return Array.from({ length: years }, (_, i) => {
+    const y = i + 1;
     const n = y * 12;
     const fv = monthly * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
-    data.push({
+    return {
       year: `Y${y}`,
       invested: Number((monthly * n).toFixed(2)),
       value: Number(fv.toFixed(2)),
       returns: Number((fv - monthly * n).toFixed(2)),
-    });
-  }
-  return data;
+    };
+  });
 }
+
+function buildLumpsumChartData(amount, annualRate, years) {
+  const r = annualRate / 100;
+  return Array.from({ length: years }, (_, i) => {
+    const y = i + 1;
+    const fv = amount * Math.pow(1 + r, y);
+    return {
+      year: `Y${y}`,
+      invested: amount,
+      value: Number(fv.toFixed(2)),
+      returns: Number((fv - amount).toFixed(2)),
+    };
+  });
+}
+
+// ─── Shared Tooltip ──────────────────────────────────────────────────────────
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -42,7 +79,7 @@ function CustomTooltip({ active, payload, label }) {
           <div className="w-2 h-2 rounded-full bg-gold" />
           <span className="text-slate-soft">Value</span>
           <span className="text-white font-mono ml-auto pl-4">
-            {formatINR(payload[1]?.value + payload[0]?.value)}
+            {formatINR((payload[1]?.value ?? 0) + (payload[0]?.value ?? 0))}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -60,41 +97,108 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
+// ─── Mode Toggle ─────────────────────────────────────────────────────────────
+
+function ModeToggle({ mode, onChange }) {
+  return (
+    <div className="flex p-1 bg-ink-muted border border-white/8 rounded-xl w-fit">
+      {["sip", "lumpsum"].map((m) => (
+        <button
+          key={m}
+          onClick={() => onChange(m)}
+          className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
+            mode === m
+              ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-400"
+              : "text-slate-dim hover:text-slate-soft"
+          }`}
+        >
+          {m === "sip" ? "SIP" : "Lumpsum"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+
 export default function SIPCalculator() {
+  const [mode, setMode] = useState("sip"); // "sip" | "lumpsum"
+
+  // SIP state
   const [monthly, setMonthly] = useState(5000);
-  const [rate, setRate] = useState(12);
-  const [years, setYears] = useState(15);
+  const [sipRate, setSipRate] = useState(12);
+  const [sipYears, setSipYears] = useState(15);
+
+  // Lumpsum state
+  const [amount, setAmount] = useState(500000);
+  const [lsRate, setLsRate] = useState(12);
+  const [lsYears, setLsYears] = useState(10);
+
   const [showYearTable, setShowYearTable] = useState(false);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  // Restore state from URL params on mount
+  // Restore from URL
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    if (p.get("tool") === "sip") {
-      if (p.get("monthly")) setMonthly(Number(p.get("monthly")));
-      if (p.get("rate"))    setRate(Number(p.get("rate")));
-      if (p.get("years"))   setYears(Number(p.get("years")));
+    if (p.get("tool") === "sip" || p.get("tool") === "lumpsum") {
+      const m = p.get("tool");
+      setMode(m);
+      if (m === "sip") {
+        if (p.get("monthly")) setMonthly(Number(p.get("monthly")));
+        if (p.get("rate"))    setSipRate(Number(p.get("rate")));
+        if (p.get("years"))   setSipYears(Number(p.get("years")));
+      } else {
+        if (p.get("amount")) setAmount(Number(p.get("amount")));
+        if (p.get("rate"))   setLsRate(Number(p.get("rate")));
+        if (p.get("years"))  setLsYears(Number(p.get("years")));
+      }
     }
   }, []);
 
-  const result = useMemo(() => calculateSIP(monthly, rate, years), [monthly, rate, years]);
-  const chartData = useMemo(() => buildChartData(monthly, rate, years), [monthly, rate, years]);
+  // Derived
+  const isSIP = mode === "sip";
+  const rate  = isSIP ? sipRate  : lsRate;
+  const years = isSIP ? sipYears : lsYears;
 
-  const totalInvested = monthly * years * 12;
-  const wealthRatio = result ? (result.futureValue / totalInvested).toFixed(1) : "—";
-  const absReturn = result
+  const result = useMemo(
+    () => isSIP
+      ? calculateSIP(monthly, sipRate, sipYears)
+      : calcLumpsum(amount, lsRate, lsYears),
+    [isSIP, monthly, sipRate, sipYears, amount, lsRate, lsYears]
+  );
+
+  const chartData = useMemo(
+    () => isSIP
+      ? buildSIPChartData(monthly, sipRate, sipYears)
+      : buildLumpsumChartData(amount, lsRate, lsYears),
+    [isSIP, monthly, sipRate, sipYears, amount, lsRate, lsYears]
+  );
+
+  const totalInvested = isSIP ? monthly * years * 12 : amount;
+  const wealthRatio   = result ? (result.futureValue / totalInvested).toFixed(1) : "—";
+  const absReturn     = result
     ? Math.round(((result.futureValue - totalInvested) / totalInvested) * 100)
     : 0;
 
+  // Tip values
+  const tipResult = useMemo(() => {
+    if (isSIP) return calculateSIP(monthly, sipRate, sipYears + 5);
+    return calcLumpsum(amount, lsRate, lsYears + 5);
+  }, [isSIP, monthly, sipRate, sipYears, amount, lsRate, lsYears]);
+
+  const tipExtra = result ? tipResult.futureValue - result.futureValue : 0;
+
   const handleShare = useCallback(() => {
-    const params = new URLSearchParams({ tool: "sip", monthly, rate, years });
+    const params = isSIP
+      ? new URLSearchParams({ tool: "sip", monthly, rate: sipRate, years: sipYears })
+      : new URLSearchParams({ tool: "lumpsum", amount, rate: lsRate, years: lsYears });
     const url = `${window.location.origin}${window.location.pathname}?${params}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  }, [monthly, rate, years]);
+  }, [isSIP, monthly, sipRate, sipYears, amount, lsRate, lsYears]);
 
   const handleDownload = useCallback(async () => {
     if (!result) return;
@@ -108,22 +212,44 @@ export default function SIPCalculator() {
     }
   }, [monthly, rate, years, result, chartData]);
 
-  const applyPreset = (p) => { setMonthly(p.monthly); setRate(p.rate); setYears(p.years); };
+  const applyPreset = (p) => {
+    if (isSIP) {
+      setMonthly(p.monthly);
+      setSipRate(p.rate);
+      setSipYears(p.years);
+    } else {
+      setAmount(p.amount);
+      setLsRate(p.rate);
+      setLsYears(p.years);
+    }
+  };
+
+  const presets = isSIP ? SIP_PRESETS : LUMPSUM_PRESETS;
+  const yearQuickPicks = isSIP
+    ? [3, 5, 7, 10, 15, 20, 25, 30]
+    : [1, 2, 3, 5, 7, 10, 15, 20];
 
   return (
     <div className="min-h-screen bg-ink pt-20 pb-16">
+      <Seo
+        title="SIP & Lumpsum Calculator | FinWise"
+        description="Estimate SIP returns and lump sum growth with Indian market assumptions. Plan goal-based investments and compare wealth accumulation."
+        keywords="SIP calculator, lumpsum calculator, investment returns, goal planning, mutual fund SIP"
+      />
       {/* Header */}
       <div className="max-w-6xl mx-auto px-4 pt-8 pb-6 animate-slide-up-1">
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <p className="text-gold text-xs font-mono uppercase tracking-widest mb-2">
-              Calculator · SIP
+              Calculator · {isSIP ? "SIP" : "Lumpsum"}
             </p>
             <h1 className="font-display text-4xl font-800 text-white leading-none">
-              SIP Calculator
+              {isSIP ? "SIP Calculator" : "Lumpsum Calculator"}
             </h1>
             <p className="text-slate-soft mt-2 text-sm">
-              See how small monthly investments compound into wealth.
+              {isSIP
+                ? "See how small monthly investments compound into wealth."
+                : "Calculate how a one-time investment grows over time."}
             </p>
           </div>
           <div className="flex gap-2">
@@ -145,9 +271,11 @@ export default function SIPCalculator() {
           </div>
         </div>
 
-        {/* Presets */}
-        <div className="flex gap-2 mt-5 flex-wrap">
-          {PRESETS.map((p) => (
+        {/* Mode toggle + Presets */}
+        <div className="flex flex-wrap items-center gap-3 mt-5">
+          <ModeToggle mode={mode} onChange={(m) => { setMode(m); setShowYearTable(false); }} />
+          <div className="w-px h-5 bg-white/10" />
+          {presets.map((p) => (
             <button
               key={p.label}
               onClick={() => applyPreset(p)}
@@ -163,72 +291,151 @@ export default function SIPCalculator() {
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* Input Panel */}
         <div className="lg:col-span-3 bg-ink-soft border border-white/8 rounded-2xl p-6 space-y-8 animate-slide-up-2">
-          <SliderInput
-            label="Monthly Investment"
-            value={monthly}
-            min={500}
-            max={100000}
-            step={500}
-            onChange={setMonthly}
-            format={(v) => formatINR(v)}
-          />
-          <SliderInput
-            label="Expected Return"
-            value={rate}
-            min={1}
-            max={30}
-            step={0.5}
-            onChange={setRate}
-            unit="% p.a."
-          />
-          <div className="space-y-3">
-            <SliderInput
-              label="Investment Duration"
-              value={years}
-              min={1}
-              max={40}
-              step={1}
-              onChange={setYears}
-              unit="yrs"
-            />
-            <div className="flex gap-2 flex-wrap pt-1">
-              {[3, 5, 7, 10, 15, 20, 25, 30].map((y) => (
-                <button
-                  key={y}
-                  onClick={() => setYears(y)}
-                  className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
-                    years === y
-                      ? "border-gold/60 text-gold bg-gold/10"
-                      : "border-white/10 text-slate-dim hover:border-white/20 hover:text-slate-soft"
-                  }`}
-                >
-                  {y}Y
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Formula display */}
-          <div className="bg-ink-muted border border-white/5 rounded-xl p-4">
-            <p className="text-xs text-slate-dim mb-2 uppercase tracking-wider font-mono">Formula</p>
-            <p className="text-xs text-slate-soft font-mono leading-relaxed">
-              FV = P × [ (1+r)ⁿ − 1 ] / r × (1+r)
-            </p>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-              <div>
-                <span className="text-slate-dim">P = </span>
-                <span className="text-white font-mono">{formatINR(monthly)}/mo</span>
+          {isSIP ? (
+            /* ── SIP Inputs ── */
+            <>
+              <SliderInput
+                label="Monthly Investment"
+                value={monthly}
+                min={500}
+                max={100000}
+                step={500}
+                onChange={setMonthly}
+                format={(v) => formatINR(v)}
+              />
+              <SliderInput
+                label="Expected Return"
+                value={sipRate}
+                min={1}
+                max={30}
+                step={0.5}
+                onChange={setSipRate}
+                unit="% p.a."
+              />
+              <div className="space-y-3">
+                <SliderInput
+                  label="Investment Duration"
+                  value={sipYears}
+                  min={1}
+                  max={40}
+                  step={1}
+                  onChange={setSipYears}
+                  unit="yrs"
+                />
+                <div className="flex gap-2 flex-wrap pt-1">
+                  {yearQuickPicks.map((y) => (
+                    <button
+                      key={y}
+                      onClick={() => setSipYears(y)}
+                      className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                        sipYears === y
+                          ? "border-gold/60 text-gold bg-gold/10"
+                          : "border-white/10 text-slate-dim hover:border-white/20 hover:text-slate-soft"
+                      }`}
+                    >
+                      {y}Y
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div>
-                <span className="text-slate-dim">r = </span>
-                <span className="text-white font-mono">{(rate / 12 / 100).toFixed(5)}</span>
+
+              {/* Formula */}
+              <div className="bg-ink-muted border border-white/5 rounded-xl p-4">
+                <p className="text-xs text-slate-dim mb-2 uppercase tracking-wider font-mono">Formula</p>
+                <p className="text-xs text-slate-soft font-mono leading-relaxed">
+                  FV = P × [ (1+r)ⁿ − 1 ] / r × (1+r)
+                </p>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                  <div><span className="text-slate-dim">P = </span><span className="text-white font-mono">{formatINR(monthly)}/mo</span></div>
+                  <div><span className="text-slate-dim">r = </span><span className="text-white font-mono">{(sipRate / 12 / 100).toFixed(5)}</span></div>
+                  <div><span className="text-slate-dim">n = </span><span className="text-white font-mono">{sipYears * 12} mo</span></div>
+                </div>
               </div>
-              <div>
-                <span className="text-slate-dim">n = </span>
-                <span className="text-white font-mono">{years * 12} mo</span>
+            </>
+          ) : (
+            /* ── Lumpsum Inputs ── */
+            <>
+              <SliderInput
+                label="Investment Amount"
+                value={amount}
+                min={10000}
+                max={10000000}
+                step={10000}
+                onChange={setAmount}
+                format={(v) => formatINR(v)}
+              />
+              <SliderInput
+                label="Expected Return"
+                value={lsRate}
+                min={1}
+                max={30}
+                step={0.5}
+                onChange={setLsRate}
+                unit="% p.a."
+              />
+              <div className="space-y-3">
+                <SliderInput
+                  label="Investment Duration"
+                  value={lsYears}
+                  min={1}
+                  max={40}
+                  step={1}
+                  onChange={setLsYears}
+                  unit="yrs"
+                />
+                <div className="flex gap-2 flex-wrap pt-1">
+                  {yearQuickPicks.map((y) => (
+                    <button
+                      key={y}
+                      onClick={() => setLsYears(y)}
+                      className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
+                        lsYears === y
+                          ? "border-gold/60 text-gold bg-gold/10"
+                          : "border-white/10 text-slate-dim hover:border-white/20 hover:text-slate-soft"
+                      }`}
+                    >
+                      {y}Y
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
+
+              {/* Formula */}
+              <div className="bg-ink-muted border border-white/5 rounded-xl p-4">
+                <p className="text-xs text-slate-dim mb-2 uppercase tracking-wider font-mono">Formula</p>
+                <p className="text-xs text-slate-soft font-mono leading-relaxed">
+                  FV = P × (1 + r)ⁿ
+                </p>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                  <div><span className="text-slate-dim">P = </span><span className="text-white font-mono">{formatINR(amount)}</span></div>
+                  <div><span className="text-slate-dim">r = </span><span className="text-white font-mono">{(lsRate / 100).toFixed(2)}</span></div>
+                  <div><span className="text-slate-dim">n = </span><span className="text-white font-mono">{lsYears} yrs</span></div>
+                </div>
+              </div>
+
+              {/* SIP vs Lumpsum comparison callout */}
+              {result && (
+                <div className="bg-gold/5 border border-gold/15 rounded-xl p-4">
+                  <p className="text-xs text-slate-dim mb-2 uppercase tracking-wider font-mono">SIP Equivalent</p>
+                  <p className="text-xs text-slate-soft leading-relaxed">
+                    Investing{" "}
+                    <span className="text-white font-medium">
+                      {formatINR(Math.round(amount / (lsYears * 12)))}
+                    </span>
+                    /month via SIP for {lsYears} years at {lsRate}% would give{" "}
+                    <span className="text-gold font-medium">
+                      {formatINR(calculateSIP(Math.round(amount / (lsYears * 12)), lsRate, lsYears).futureValue)}
+                    </span>
+                    {" "}vs lumpsum's{" "}
+                    <span className="text-emerald-400 font-medium">
+                      {formatINR(result.futureValue)}
+                    </span>.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Result Panel */}
@@ -249,7 +456,9 @@ export default function SIPCalculator() {
           {/* Stats grid */}
           <div className="bg-ink-soft border border-white/8 rounded-2xl p-5 grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-slate-dim mb-1">Total Invested</p>
+              <p className="text-xs text-slate-dim mb-1">
+                {isSIP ? "Total Invested" : "Amount Invested"}
+              </p>
               <p className="font-mono text-sm font-medium text-white">{formatINR(totalInvested)}</p>
             </div>
             <div>
@@ -266,9 +475,15 @@ export default function SIPCalculator() {
               <p className="text-xs text-slate-dim mb-1">Abs. Return</p>
               <p className="font-mono text-sm font-medium text-emerald-400">+{absReturn}%</p>
             </div>
+            {!isSIP && (
+              <div className="col-span-2">
+                <p className="text-xs text-slate-dim mb-1">Effective CAGR</p>
+                <p className="font-mono text-sm font-medium text-gold">{lsRate}% p.a.</p>
+              </div>
+            )}
           </div>
 
-          {/* Invested vs Returns bar */}
+          {/* Breakup bar */}
           {result && (
             <div className="bg-ink-soft border border-white/8 rounded-2xl p-5">
               <p className="text-xs text-slate-dim mb-3 uppercase tracking-wider">Breakup</p>
@@ -307,11 +522,18 @@ export default function SIPCalculator() {
           <div className="flex items-start gap-2.5 bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-4">
             <Sparkles size={14} className="text-emerald-400 mt-0.5 shrink-0" />
             <p className="text-xs text-slate-soft leading-relaxed">
-              Starting <span className="text-white font-medium">5 years earlier</span> with the same amount would give you{" "}
-              <span className="text-emerald-400 font-medium">
-                {formatINR(calculateSIP(monthly, rate, years + 5).futureValue - result.futureValue)}
-              </span>{" "}
-              more — the power of compounding.
+              {isSIP ? (
+                <>
+                  Starting <span className="text-white font-medium">5 years earlier</span> with the same amount would give you{" "}
+                  <span className="text-emerald-400 font-medium">{formatINR(tipExtra)}</span> more — the power of compounding.
+                </>
+              ) : (
+                <>
+                  Holding for <span className="text-white font-medium">5 more years</span> would grow your corpus to{" "}
+                  <span className="text-emerald-400 font-medium">{formatINR(tipResult.futureValue)}</span> — that's{" "}
+                  <span className="text-emerald-400 font-medium">{formatINR(tipExtra)}</span> extra.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -323,7 +545,9 @@ export default function SIPCalculator() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="text-sm font-medium text-white">Growth Over Time</p>
-              <p className="text-xs text-slate-dim mt-0.5">Invested amount vs portfolio value</p>
+              <p className="text-xs text-slate-dim mt-0.5">
+                {isSIP ? "Invested amount vs portfolio value" : "Principal vs portfolio value"}
+              </p>
             </div>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
@@ -340,11 +564,11 @@ export default function SIPCalculator() {
             <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="investedGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2A4A3A" stopOpacity={0.8} />
+                  <stop offset="5%"  stopColor="#2A4A3A" stopOpacity={0.8} />
                   <stop offset="95%" stopColor="#2A4A3A" stopOpacity={0.1} />
                 </linearGradient>
                 <linearGradient id="returnsGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#34d399" stopOpacity={0.5} />
+                  <stop offset="5%"  stopColor="#34d399" stopOpacity={0.5} />
                   <stop offset="95%" stopColor="#34d399" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
@@ -361,9 +585,9 @@ export default function SIPCalculator() {
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) =>
-                  v >= 10000000 ? `₹${(v/10000000).toFixed(1)}Cr` :
-                  v >= 100000  ? `₹${(v/100000).toFixed(0)}L` :
-                                 `₹${(v/1000).toFixed(0)}k`
+                  v >= 10000000 ? `₹${(v / 10000000).toFixed(1)}Cr` :
+                  v >= 100000  ? `₹${(v / 100000).toFixed(0)}L`    :
+                                 `₹${(v / 1000).toFixed(0)}k`
                 }
                 width={56}
               />
@@ -388,7 +612,7 @@ export default function SIPCalculator() {
             </span>
           </div>
           {showYearTable
-            ? <ChevronUp size={16} className="text-slate-dim group-hover:text-white transition-colors" />
+            ? <ChevronUp   size={16} className="text-slate-dim group-hover:text-white transition-colors" />
             : <ChevronDown size={16} className="text-slate-dim group-hover:text-white transition-colors" />}
         </button>
 
@@ -398,11 +622,13 @@ export default function SIPCalculator() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/8">
-                    <th className="px-4 py-3 text-left text-xs text-slate-dim font-medium uppercase tracking-wider">Year</th>
-                    <th className="px-4 py-3 text-right text-xs text-slate-dim font-medium uppercase tracking-wider">Invested</th>
-                    <th className="px-4 py-3 text-right text-xs text-slate-dim font-medium uppercase tracking-wider">Returns</th>
-                    <th className="px-4 py-3 text-right text-xs text-slate-dim font-medium uppercase tracking-wider">Total Value</th>
-                    <th className="px-4 py-3 text-right text-xs text-slate-dim font-medium uppercase tracking-wider">Gain</th>
+                    <th className="px-4 py-3 text-left   text-xs text-slate-dim font-medium uppercase tracking-wider">Year</th>
+                    <th className="px-4 py-3 text-right  text-xs text-slate-dim font-medium uppercase tracking-wider">
+                      {isSIP ? "Invested" : "Principal"}
+                    </th>
+                    <th className="px-4 py-3 text-right  text-xs text-slate-dim font-medium uppercase tracking-wider">Returns</th>
+                    <th className="px-4 py-3 text-right  text-xs text-slate-dim font-medium uppercase tracking-wider">Total Value</th>
+                    <th className="px-4 py-3 text-right  text-xs text-slate-dim font-medium uppercase tracking-wider">Gain</th>
                   </tr>
                 </thead>
                 <tbody>

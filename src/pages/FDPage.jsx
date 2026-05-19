@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { Landmark, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import SliderInput from "../components/SliderInput";
+import Seo from "../components/Seo";
 import { formatINR } from "../utils/calculations";
 
 // --- Calculation helpers ---
@@ -135,6 +136,11 @@ export default function FDPage() {
 
   return (
     <div className="pt-24 pb-16 px-4 max-w-5xl mx-auto">
+      <Seo
+        title="Fixed Deposit Calculator | FinWise"
+        description="Calculate FD maturity and interest for any deposit, rate and tenure. Compare compounding frequencies and plan long-term savings."
+        keywords="FD calculator, fixed deposit calculator, maturity value, compounding interest"
+      />
       {/* Header */}
       <div className="mb-8 animate-slide-up-1">
         <p className="text-gold text-xs font-mono uppercase tracking-widest mb-2">Calculator · FD</p>

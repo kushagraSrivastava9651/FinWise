@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { ChevronDown, ChevronUp, Download, Share2, TrendingDown, Check } from "lucide-react";
 import SliderInput from "../components/SliderInput";
+import Seo from "../components/Seo";
 import { calculateEMI, generateAmortisation, formatINR, formatNumber } from "../utils/calculations";
 import { downloadEMIPdf } from "../utils/pdfExport";
 
@@ -95,6 +96,11 @@ export default function EMICalculator() {
 
   return (
     <div className="min-h-screen bg-ink pt-20 pb-16">
+      <Seo
+        title="EMI Calculator | FinWise"
+        description="Calculate EMI for home, car, education, and personal loans. Compare monthly payments, interest costs, and total payback quickly."
+        keywords="EMI calculator, loan EMI, monthly payment calculator, Indian loan calculator"
+      />
       {/* Header */}
       <div className="max-w-6xl mx-auto px-4 pt-8 pb-6 animate-slide-up-1">
         <div className="flex items-start justify-between flex-wrap gap-4">

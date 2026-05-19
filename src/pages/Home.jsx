@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Calculator, TrendingUp, GitCompare, Table2, PiggyBank, Wallet, ArrowRight, BarChart2, Receipt } from "lucide-react";
+import Seo from "../components/Seo";
 
 const features = [
   {
@@ -58,6 +59,11 @@ const features = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-ink pt-20">
+      <Seo
+        title="FinWise – Smart Finance Tools for EMI, SIP, FD, Tax & Loan Planning"
+        description="FinWise offers free calculators for EMI, SIP, FD, tax, amortisation, and loan comparison. Plan smart payments and investments with ease."
+        keywords="EMI calculator, SIP calculator, loan calculator, FD calculator, tax calculator, finance tools"
+      />
       {/* Hero */}
       <div className="max-w-6xl mx-auto px-4 pt-16 pb-12 text-center animate-slide-up-1">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gold/10 border border-gold/20 rounded-full mb-6">

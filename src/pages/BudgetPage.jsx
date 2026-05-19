@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Trash2, Wallet, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import Seo from "../components/Seo";
 
 // ─── Default Categories ───────────────────────────────────────────────────────
 
@@ -126,6 +127,11 @@ export default function BudgetPage() {
 
   return (
     <div className="min-h-screen bg-ink pt-20 pb-16">
+      <Seo
+        title="Budget Tracker | FinWise"
+        description="Track monthly income, expenses and savings with category-based budgeting. Spot overspending and improve your cash flow."
+        keywords="budget tracker, expense tracker, savings planner, monthly budget"
+      />
 
       {/* Header */}
       <div className="max-w-6xl mx-auto px-4 pt-8 pb-6 animate-slide-up-1">
