@@ -402,7 +402,7 @@ export default function SIPCalculator() {
               </div>
 
               {/* Formula */}
-              <div className="bg-ink-muted border border-white/5 rounded-xl p-4">
+              {/* <div className="bg-ink-muted border border-white/5 rounded-xl p-4">
                 <p className="text-xs text-slate-dim mb-2 uppercase tracking-wider font-mono">Formula</p>
                 <p className="text-xs text-slate-soft font-mono leading-relaxed">
                   FV = P × (1 + r)ⁿ
@@ -412,7 +412,7 @@ export default function SIPCalculator() {
                   <div><span className="text-slate-dim">r = </span><span className="text-white font-mono">{(lsRate / 100).toFixed(2)}</span></div>
                   <div><span className="text-slate-dim">n = </span><span className="text-white font-mono">{lsYears} yrs</span></div>
                 </div>
-              </div>
+              </div> */}
 
               {/* SIP vs Lumpsum comparison callout */}
               {result && (
