@@ -4,8 +4,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["'Syne'", "sans-serif"],
-        body: ["'DM Sans'", "sans-serif"],
+        display: ["'Sora'", "sans-serif"],
+        body: ["'Inter'", "sans-serif"],
         mono: ["'DM Mono'", "monospace"],
       },
       colors: {

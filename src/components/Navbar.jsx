@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { TrendingUp, Menu, X, Calculator, BarChart2, GitCompare, Table2, PiggyBank, Wallet, Receipt } from "lucide-react";
+import { TrendingUp, Menu, X, Calculator, BarChart2, GitCompare, Table2, PiggyBank, Wallet, Receipt, Moon, Sun } from "lucide-react";
 
 const navItems = [
   { to: "/emi", label: "EMI", icon: Calculator },
@@ -12,7 +12,7 @@ const navItems = [
   { to: "/tax", label: "Tax", icon: Receipt },
 ];
 
-export default function Navbar() {
+export default function Navbar({ theme, toggleTheme }) {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
 
@@ -49,6 +49,14 @@ export default function Navbar() {
 
         {/* Pro Badge + Mobile Menu */}
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-slate-soft text-sm font-medium hover:text-white hover:bg-white/10 transition-all"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            <span className="hidden sm:inline">{theme === "dark" ? "Light" : "Dark"}</span>
+          </button>
           <button className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 border border-gold/30 rounded-lg text-gold text-sm font-medium hover:bg-gold/20 transition-all">
             ✦ Go Pro · ₹199
           </button>
