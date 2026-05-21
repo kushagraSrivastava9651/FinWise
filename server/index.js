@@ -20,8 +20,8 @@ app.use(
 
 app.use('/api/auth', authRoutes);
 
-// Serve static files from React build directory
-const buildPath = path.join(__dirname, '../build');
+// Serve static files from Vite build directory
+const buildPath = path.join(__dirname, '../dist');
 app.use(express.static(buildPath));
 
 app.get('/api/status', (req, res) => {
