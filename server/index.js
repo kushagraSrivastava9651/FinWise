@@ -5,31 +5,30 @@ const path = require('path');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 
-dotenv.config();
-connectDB();
+dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
+const buildPath = path.join(__dirname, '../dist');
 
 app.use(express.json());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true,
   })
 );
 
 app.use('/api/auth', authRoutes);
 
-// Serve static files from Vite build directory
-const buildPath = path.join(__dirname, '../dist');
-app.use(express.static(buildPath));
-
 app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', service: 'FinWise Auth Server' });
 });
 
-// Fallback to index.html for React Router
-app.get('*', (req, res) => {
+app.use(express.static(buildPath));
+
+// SPA fallback: serve index.html for client-side routes (e.g. /login)
+app.get(/^\/(?!api\/).*/, (req, res) => {
   res.sendFile(path.join(buildPath, 'index.html'), (err) => {
     if (err) {
       res.status(500).json({ status: 'error', message: 'Failed to load page' });
@@ -38,6 +37,15 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Auth server running on http://localhost:${PORT}`);
+
+async function start() {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+start().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
 });
