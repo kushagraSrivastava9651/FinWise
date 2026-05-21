@@ -14,10 +14,6 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-
-import {
-} from "./pages/Placeholders";
-
 export default function App() {
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") return "dark";

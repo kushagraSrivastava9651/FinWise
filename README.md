@@ -13,9 +13,9 @@ npm install
 
 ### 2. Start the dev server
 ```bash
-npm start
+npm run dev
 ```
-Opens at `http://localhost:3000`
+Opens at `http://localhost:5173`
 
 ---
 
@@ -23,23 +23,16 @@ Opens at `http://localhost:3000`
 
 ```
 finwise/
-├── public/
-│   └── index.html
+├── index.html               ← Vite entry HTML
 ├── src/
-│   ├── components/
-│   │   ├── Navbar.jsx       ← Top nav with all routes
-│   │   └── SliderInput.jsx  ← Reusable slider component
-│   ├── pages/
-│   │   ├── Home.jsx         ← Landing page / feature grid
-│   │   ├── EMICalculator.jsx ← ✅ DONE — full EMI calculator
-│   │   └── Placeholders.jsx ← Stub pages for upcoming calculators
-│   ├── utils/
-│   │   └── calculations.js  ← All math: EMI, SIP, FD, Amortisation
+│   ├── main.jsx             ← Entry point
 │   ├── App.jsx              ← Router setup
-│   ├── index.js             ← Entry point
-│   └── index.css            ← Global styles + Tailwind
+│   ├── index.css            ← Tailwind + theme tokens
+│   ├── components/
+│   ├── pages/
+│   └── utils/
+├── server/                  ← Express API + auth
 ├── tailwind.config.js
-├── postcss.config.js
 └── package.json
 ```
 
