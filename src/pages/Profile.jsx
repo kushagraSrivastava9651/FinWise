@@ -1,8 +1,14 @@
+import { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 export default function Profile() {
   const { user, logout, loading } = useAuth();
+
+  const displayId = useMemo(() => {
+    if (!user) return '';
+    return user.userId || user.id || user._id || 'unknown-id';
+  }, [user]);
 
   if (loading) {
     return null;
@@ -29,7 +35,7 @@ export default function Profile() {
             </div>
             <div className="rounded-2xl border border-white/10 bg-ink-muted p-5">
               <p className="text-slate-dim text-xs uppercase tracking-wider mb-2">User ID</p>
-              <p className="text-white font-mono break-all">{user.id}</p>
+              <p className="text-white font-mono break-all">{displayId}</p>
             </div>
           </div>
 
