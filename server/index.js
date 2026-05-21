@@ -19,8 +19,18 @@ app.use(
 
 app.use('/api/auth', authRoutes);
 
-app.get('/', (req, res) => {
+// Serve static files from the built frontend
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// API routes
+app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', service: 'FinWise Auth Server' });
+});
+
+// Serve frontend for all other routes (for client-side routing)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
