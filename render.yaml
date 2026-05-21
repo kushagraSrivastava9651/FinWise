@@ -9,7 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: CLIENT_URL
-        value: https://finwise-knz0.onrender.com
+        value: https://finwise-1-v170.onrender.com
       - key: VITE_API_URL
         value: https://finwise-knz0.onrender.com
       - key: MONGO_URI

@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
+const { corsOrigin } = require('./cors');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -14,7 +15,7 @@ const buildPath = path.join(__dirname, '../dist');
 app.use(express.json());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: corsOrigin,
     credentials: true,
   })
 );
