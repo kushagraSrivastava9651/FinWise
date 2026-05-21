@@ -9,6 +9,10 @@ import ComparePage from "./pages/Comparepage";
 import FDPage from "./pages/FDPage";
 import TaxPage from "./pages/TaxPage";
 import BudgetPage from "./pages/BudgetPage";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 
 import {
@@ -51,6 +55,9 @@ export default function App() {
         <Route path="/fd" element={<FDPage />} />
         <Route path="/budget" element={<BudgetPage />} />
         <Route path="/tax" element={<TaxPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

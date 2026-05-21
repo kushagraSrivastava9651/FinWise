@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { TrendingUp, Menu, X, Calculator, BarChart2, GitCompare, Table2, PiggyBank, Wallet, Receipt, Moon, Sun } from "lucide-react";
+import { TrendingUp, Menu, X, Calculator, BarChart2, GitCompare, Table2, PiggyBank, Wallet, Receipt, Moon, Sun, UserCircle2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const navItems = [
   { to: "/emi", label: "EMI", icon: Calculator },
@@ -15,6 +16,7 @@ const navItems = [
 export default function Navbar({ theme, toggleTheme }) {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const { user, logout } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-ink/90 backdrop-blur-md border-b border-white/5">
@@ -47,7 +49,7 @@ export default function Navbar({ theme, toggleTheme }) {
           ))}
         </div>
 
-        {/* Pro Badge + Mobile Menu */}
+        {/* Pro Badge + Auth + Mobile Menu */}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -57,9 +59,30 @@ export default function Navbar({ theme, toggleTheme }) {
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             <span className="hidden sm:inline">{theme === "dark" ? "Light" : "Dark"}</span>
           </button>
-          <button className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 border border-gold/30 rounded-lg text-gold text-sm font-medium hover:bg-gold/20 transition-all">
-            ✦ Go Pro · ₹199
-          </button>
+          {user ? (
+            <>
+              <Link
+                to="/profile"
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-slate-soft text-sm font-medium hover:text-white hover:bg-white/10 transition-all"
+              >
+                <UserCircle2 size={16} />
+                {user.name}
+              </Link>
+              <button
+                onClick={logout}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-red-500 rounded-lg text-white text-sm font-medium hover:bg-red-600 transition-all"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 border border-gold/30 rounded-lg text-gold text-sm font-medium hover:bg-gold/20 transition-all"
+            >
+              Login
+            </Link>
+          )}
           <button
             onClick={() => setOpen(!open)}
             className="md:hidden text-slate-soft hover:text-white p-1"
@@ -87,6 +110,37 @@ export default function Navbar({ theme, toggleTheme }) {
               {label}
             </Link>
           ))}
+          {user ? (
+            <>
+              <Link
+                to="/profile"
+                onClick={() => setOpen(false)}
+                className="flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-medium text-slate-soft hover:text-white hover:bg-white/5"
+              >
+                <UserCircle2 size={18} />
+                Profile
+              </Link>
+              <button
+                onClick={() => {
+                  logout();
+                  setOpen(false);
+                }}
+                className="flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-medium text-red-400 hover:text-white hover:bg-white/5"
+              >
+                <X size={18} />
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              onClick={() => setOpen(false)}
+              className="flex flex-col items-center gap-1 p-3 rounded-xl text-xs font-medium text-gold hover:text-white hover:bg-white/5"
+            >
+              <Sun size={18} />
+              Login
+            </Link>
+          )}
         </div>
       )}
     </nav>
