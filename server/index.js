@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 
@@ -19,8 +20,21 @@ app.use(
 
 app.use('/api/auth', authRoutes);
 
-app.get('/', (req, res) => {
+// Serve static files from React build directory
+const buildPath = path.join(__dirname, '../build');
+app.use(express.static(buildPath));
+
+app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', service: 'FinWise Auth Server' });
+});
+
+// Fallback to index.html for React Router
+app.get('*', (req, res) => {
+  res.sendFile(path.join(buildPath, 'index.html'), (err) => {
+    if (err) {
+      res.status(500).json({ status: 'error', message: 'Failed to load page' });
+    }
+  });
 });
 
 const PORT = process.env.PORT || 5000;
