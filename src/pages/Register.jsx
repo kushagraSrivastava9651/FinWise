@@ -1,15 +1,29 @@
 import { useState } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import AuthLayout from '../components/auth/AuthLayout';
+import AuthField from '../components/auth/AuthField';
+import AuthAlert from '../components/auth/AuthAlert';
 
 export default function Register() {
-  const { user, register } = useAuth();
+  const { user, register, loading } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
+
+  if (loading) {
+    return (
+      <AuthLayout eyebrow="Create account" title="Register" subtitle="Checking your session…">
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-gold" aria-label="Loading" />
+        </div>
+      </AuthLayout>
+    );
+  }
 
   if (user) {
     return <Navigate to="/profile" replace />;
@@ -18,67 +32,88 @@ export default function Register() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
     setWorking(true);
 
     try {
       await register({ name, email, password });
       navigate('/profile', { replace: true });
     } catch (err) {
-      setError(err.message || 'Unable to register');
+      setError(err.message || 'Unable to create account. Try a different email.');
     } finally {
       setWorking(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-ink pt-24 pb-16 px-4 text-center">
-      <div className="max-w-md mx-auto bg-ink-soft border border-white/10 rounded-3xl p-8 shadow-xl">
-        <p className="text-gold text-xs font-mono uppercase tracking-widest mb-4">Create account</p>
-        <h1 className="text-3xl font-display font-800 text-white mb-2">Register</h1>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-left text-slate-soft text-xs uppercase tracking-wider">
-            Name
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-ink-muted px-4 py-3 text-white outline-none focus:border-gold focus:ring-2 focus:ring-gold/20"
-              required
-            />
-          </label>
-          <label className="block text-left text-slate-soft text-xs uppercase tracking-wider">
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-ink-muted px-4 py-3 text-white outline-none focus:border-gold focus:ring-2 focus:ring-gold/20"
-              required
-            />
-          </label>
-          <label className="block text-left text-slate-soft text-xs uppercase tracking-wider">
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-ink-muted px-4 py-3 text-white outline-none focus:border-gold focus:ring-2 focus:ring-gold/20"
-              required
-            />
-          </label>
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          <button
-            type="submit"
-            disabled={working}
-            className="w-full rounded-2xl bg-gold px-4 py-3 text-ink font-semibold hover:bg-gold-light transition"
-          >
-            {working ? 'Creating account…' : 'Create account'}
-          </button>
-        </form>
-        <p className="text-slate-dim text-sm mt-5">
-          Already have an account? <Link className="text-gold hover:underline" to="/login">Sign in</Link>
+    <AuthLayout
+      eyebrow="Create account"
+      title="Join FinWise"
+      subtitle="Free account — use calculators and manage your profile on any device."
+      footer={
+        <p className="text-sm text-slate-dim">
+          Already have an account?{' '}
+          <Link className="font-medium text-gold hover:underline" to="/login">
+            Sign in
+          </Link>
         </p>
-      </div>
-    </div>
+      }
+    >
+      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+        <AuthField
+          id="name"
+          label="Full name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoComplete="name"
+          placeholder="Your name"
+          disabled={working}
+        />
+        <AuthField
+          id="email"
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+          inputMode="email"
+          placeholder="you@example.com"
+          disabled={working}
+        />
+        <AuthField
+          id="password"
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+          placeholder="At least 6 characters"
+          disabled={working}
+        />
+
+        <AuthAlert message={error} />
+
+        <button
+          type="submit"
+          disabled={working}
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-gold px-4 py-3.5 text-base font-semibold text-ink transition hover:bg-gold-light active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 sm:text-sm"
+        >
+          {working ? (
+            <>
+              <Loader2 size={18} className="animate-spin" aria-hidden />
+              Creating account…
+            </>
+          ) : (
+            'Create account'
+          )}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

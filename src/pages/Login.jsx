@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import AuthLayout from '../components/auth/AuthLayout';
+import AuthField from '../components/auth/AuthField';
+import AuthAlert from '../components/auth/AuthAlert';
 
 export default function Login() {
-  const { user, login } = useAuth();
+  const { user, login, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -12,6 +16,17 @@ export default function Login() {
   const [working, setWorking] = useState(false);
 
   const from = location.state?.from?.pathname || '/profile';
+  const returnLabel = from === '/profile' ? 'your profile' : 'where you left off';
+
+  if (loading) {
+    return (
+      <AuthLayout eyebrow="Member access" title="Sign in" subtitle="Checking your session…">
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-gold" aria-label="Loading" />
+        </div>
+      </AuthLayout>
+    );
+  }
 
   if (user) {
     return <Navigate to={from} replace />;
@@ -26,51 +41,67 @@ export default function Login() {
       await login({ email, password });
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || 'Unable to login');
+      setError(err.message || 'Unable to sign in. Check your email and password.');
     } finally {
       setWorking(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-ink pt-24 pb-16 px-4 text-center">
-      <div className="max-w-md mx-auto bg-ink-soft border border-white/10 rounded-3xl p-8 shadow-xl">
-        <p className="text-gold text-xs font-mono uppercase tracking-widest mb-4">Member access</p>
-        <h1 className="text-3xl font-display font-800 text-white mb-2">Login</h1>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-left text-slate-soft text-xs uppercase tracking-wider">
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-ink-muted px-4 py-3 text-white outline-none focus:border-gold focus:ring-2 focus:ring-gold/20"
-              required
-            />
-          </label>
-          <label className="block text-left text-slate-soft text-xs uppercase tracking-wider">
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-ink-muted px-4 py-3 text-white outline-none focus:border-gold focus:ring-2 focus:ring-gold/20"
-              required
-            />
-          </label>
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          <button
-            type="submit"
-            disabled={working}
-            className="w-full rounded-2xl bg-gold px-4 py-3 text-ink font-semibold hover:bg-gold-light transition"
-          >
-            {working ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
-        <p className="text-slate-dim text-sm mt-5">
-          New here? <Link className="text-gold hover:underline" to="/register">Create an account</Link>
+    <AuthLayout
+      eyebrow="Member access"
+      title="Welcome back"
+      subtitle={`Sign in to continue to ${returnLabel}.`}
+      footer={
+        <p className="text-sm text-slate-dim">
+          New to FinWise?{' '}
+          <Link className="font-medium text-gold hover:underline" to="/register">
+            Create an account
+          </Link>
         </p>
-      </div>
-    </div>
+      }
+    >
+      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+        <AuthField
+          id="email"
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+          inputMode="email"
+          placeholder="you@example.com"
+          disabled={working}
+          autoFocus
+        />
+        <AuthField
+          id="password"
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          placeholder="Enter your password"
+          disabled={working}
+        />
+
+        <AuthAlert message={error} />
+
+        <button
+          type="submit"
+          disabled={working}
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-gold px-4 py-3.5 text-base font-semibold text-ink transition hover:bg-gold-light active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 sm:text-sm"
+        >
+          {working ? (
+            <>
+              <Loader2 size={18} className="animate-spin" aria-hidden />
+              Signing in…
+            </>
+          ) : (
+            'Sign in'
+          )}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }
