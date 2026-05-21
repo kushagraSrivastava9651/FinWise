@@ -10,6 +10,8 @@ services:
         value: production
       - key: CLIENT_URL
         value: https://finwise-knz0.onrender.com
+      - key: VITE_API_URL
+        value: https://finwise-knz0.onrender.com
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
